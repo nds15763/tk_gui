@@ -1,0 +1,11 @@
+{
+    "_comment":["9B111FFAZ005AZ -- 7号","9A201FFAZ000KC -- 6号","9B111FFAZ002BY -- 8号","99151FFAZ009WE -- 2号","9A261FFAZ002BU -- 1号" ,"99231FFAZ000JD -- 3号" ,"9B151FFAZ004V2 -- 4号","9A261FFAZ008UN -- 9号"],
+    "9A201FFAZ000KC":["kimiv_shoper","kimiu_shoper","kimiw_shoper","kimit_shoper"],
+    "9A261FFAZ008UN":["kimiaf_shoper","kimiac_shoper","kimiad_shoper","kimoae_shoper"],
+    "9B111FFAZ005AZ":["kimiaa_shoper","kimiab_shoper","kimiak_shoper","kimial_shoper"],
+    "9B111FFAZ002BY":["kimiag_shoper","kimiah_shoper","kimiai_shoper","kimiaj_shoper"],
+    "99151FFAZ009WE":["kimio_shoper","kimior_shoper","kimir_shoper","kimik_shoper"],
+    "9A261FFAZ002BU":["kimibest_shoper","kimitk_shoper","kimilo_shoper","kimin_shoper"],
+    "99231FFAZ000JD":["kimig_shoper","kimie_shoper","kimif_shoper","kimip_shoper"],
+    "9B151FFAZ004V2":["kimii_shoper","kimieveryday_shoper","kimim_shoper","kimiq_shoper"]
+}
