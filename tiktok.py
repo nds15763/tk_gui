@@ -123,10 +123,10 @@ def post_drafts(device):
             time.sleep(5)
             #点击Post文字
             d.click(770,2130)
-            print('点击发送视频，休眠:'+str(300/60)+"分钟")
+            print('点击发送视频，休眠:'+str(3600/60)+"分钟")
             #print('点击Post文字')
-            #然后等5分钟,换号
-            time.sleep(300)
+            #然后等一个小时,换号
+            time.sleep(3600)
             #切换账号
             #账号对应数量加一
             account_schedule[username] = account_schedule[username] - 1
@@ -135,6 +135,19 @@ def post_drafts(device):
         #查询一下account_schedule，如果要切换的下一个账号已经为0了，就继续下一个
         if account_schedule[username] == 0:
             j+=1
+            #在数组里删除该账号
+            del account_schedule[username]
+            #在account_list里也删除该账号
+            account_list.remove(username)
+        
+        #如果删完了以后没有该发的帐号了，就退出
+        if len(account_schedule) == 0:
+            return
+        
+        #如果account_schedule里面的只有一个账号，则不切换账号
+        if len(account_schedule) == 1:
+            continue
+        #切换账号
         switch_account(d,account_list[j% len(account_list)])
 
 #切换账号
