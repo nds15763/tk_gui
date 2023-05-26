@@ -5,8 +5,6 @@ import threading
 
 
 
-
-
 def __main__():
     devices_list = tt.get_devices_serials()
     print("准备连接所有设备:")

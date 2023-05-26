@@ -6,6 +6,20 @@ import json
 device_account = {'9A261FFAZ008UN':['kimiaf_shoper','kimiac_shoper','kimiad_shoper','kimiae_shoper']}
 account_list = {'kimiaf_shoper':0,'kimiac_shoper':0,'kimiad_shoper':0,'kimiae_shoper':0}
 
+
+def get_device_name():
+    #读取本地的tmp.json文件
+    with open('device.json', encoding='utf-8') as f:
+        data = json.load(f)
+         
+        return  data
+    
+global_device_name = get_device_name()
+
+def dev_print(device,msg):
+
+    print(global_device_name[device]+":"+msg)
+
 def get_input_data(device):
     #读取本地的tmp.json文件
     with open('data.json', encoding='utf-8') as f:
@@ -48,13 +62,13 @@ def get_devices_serials():
 
 def wake_up(device):
     d = u2.connect(device)
-    print("唤醒设备")
+    dev_print(device,"唤醒设备")
     print(d.info)
     #d.app_start("com.zhiliaoapp.musically")
 
 def post_drafts(device):
     d = u2.connect(device)
-    print("唤醒设备")
+    dev_print(device,"唤醒设备")
 
     #提取该设备中所有的账号
     account_list = get_device_account_data(device)
@@ -70,18 +84,19 @@ def post_drafts(device):
             d.click(100,150)
 
         #点击profile
-        print("点击profile")
+        dev_print(device,"点击profile")
         d.click(960,2150)
         time.sleep(5)
+        username = ""
         #获取当前用户名
         if d(textStartsWith="@"):
             username = d(textStartsWith="@").get_text()
             #账号名去掉@符号
             username = username.replace("@","")
             #输出用户名
-            print("获取当前用户名:"+username)
+            dev_print(device,"获取当前用户名:"+username)
         else:
-            print("**获取不到用户名**")
+            dev_print(device,"**获取不到用户名**")
 
         #如果已经为0,则继续下一个账号
         if account_schedule[username] == 0:
@@ -123,10 +138,10 @@ def post_drafts(device):
             time.sleep(5)
             #点击Post文字
             d.click(770,2130)
-            print('点击发送视频，休眠:'+str(3600/60)+"分钟")
-            #print('点击Post文字')
-            #然后等一个小时,换号
-            time.sleep(3600)
+            dev_print(device,'点击发送视频，休眠:'+str(3600/60)+"分钟")
+            #dev_print(device,'点击Post文字')
+            #然后等半个小时,换号
+            time.sleep(1800)
             #切换账号
             #账号对应数量加一
             account_schedule[username] = account_schedule[username] - 1
@@ -147,12 +162,24 @@ def post_drafts(device):
         #如果account_schedule里面的只有一个账号，则不切换账号
         if len(account_schedule) == 1:
             continue
+        
+        nextuser = account_list[j% len(account_list)]
+        if nextuser == username:
+            nextuser = account_list[j+1% len(account_list)]
         #切换账号
-        switch_account(d,account_list[j% len(account_list)])
+        switch_account(d,nextuser,device)
 
 #切换账号
-def switch_account(d,account):
-    print("切换账号:"+account)
+def switch_account(d,account,device):
+    dev_print(device,"切换账号:"+account)
+    #先执行退出
+    d.app_stop('com.zhiliaoapp.musically')
+    #等待10秒
+    time.sleep(10)
+    #再唤醒app
+    d.app_start('com.zhiliaoapp.musically')
+    #等待10秒
+    time.sleep(10)
     #点击profile
     d.click(960,2150)
     time.sleep(2)
@@ -185,7 +212,7 @@ def cancelPopup(d):
 #发布视频
 def post_video(device):
     d = u2.connect(device)
-    print("唤醒设备")
+    dev_print(device,"唤醒设备")
     print(d.info)
     #d.app_start("com.zhiliaoapp.musically")
     data = get_input_data(device)
@@ -193,17 +220,18 @@ def post_video(device):
     for i in range(len(data)):
         tmpdata = data[i]
         #选择视频
-        SelectVideo(d,i)
-        #添加文案
-        AddVideotext(d,tmpdata["video_text"])
+        SelectVideo(d,i,device)
+        if tmpdata["video_text"] != "":
+            #添加文案
+            AddVideotext(d,tmpdata["video_text"],device)
         #添加音乐
-        AddMusic(d)
+        AddMusic(d,device)
         #如果需要静音
         mute = False
         try: 
             mute = tmpdata["mute_bgm"]
         except Exception as e:
-            print("通知:没有mute_bgm字段")
+            dev_print(device,"通知:没有mute_bgm字段")
 
         if mute:
             #编辑音量
@@ -212,279 +240,298 @@ def post_video(device):
         #点击下一步
         d(text="Next").click()
         #填写post文案
-        EditPostContent(d,tmpdata)
+        EditPostContent(d,tmpdata,device)
         
         for j in range(len(tmpdata['product'])):
             #添加产品
-            AddProduct(d,tmpdata['product'][j])
+            AddProduct(d,tmpdata['product'][j],device)
 
 
         #判断是否是仅自己可见
         if d(textStartsWith="Only you can").exists():
-            print("出现仅自己可见")
+            dev_print(device,"出现仅自己可见")
             d(textStartsWith="Only you can").click()
             time.sleep(2)
-            print("设置所有人可见")
+            dev_print(device,"设置所有人可见")
             d(text="Everyone").click()
             time.sleep(2)
-            print("落下弹窗")
+            dev_print(device,"落下弹窗")
             #点击空白处落下键盘
             d.click(1024,650)
 
         #点击存入草稿箱
-        print("结束--点击存入草稿箱")
+        dev_print(device,"结束--点击存入草稿箱")
 
         d(text="Drafts").click()
         time.sleep(5)
 
 #添加文案
-def AddVideotext(d,text):
-    print("文案---添加文案:"+text)
+def AddVideotext(d,text,device):
+    dev_print(device,"文案---添加文案:"+text)
     #点击添加文案
     d(text="Text").click()
     time.sleep(2)
     tts = d(text="Done")
     if not tts.exists():
         #再次点击Text文案
-        print("文案---再次点击Text文案")
+        dev_print(device,"文案---再次点击Text文案")
         d(text="Text").click()
         time.sleep(2)
     
     if not tts.exists():
         #长按text文案1秒
-        print("文案---长按text文案1秒")
+        dev_print(device,"文案---长按text文案1秒")
         d(text="Text").long_click(1)
         time.sleep(2)
 
     if not tts.exists():
         #报错
-        print("错误:文案---找不到文字输入框")
+        dev_print(device,"错误:文案---找不到文字输入框")
         return
     
     time.sleep(2)
     #把内容存入剪贴板
-    print("文案---把内容存入剪贴板")
+    dev_print(device,"文案---把内容存入剪贴板")
     d.set_clipboard(text)
     time.sleep(2)
     #长按输入框2秒
-    print("文案---长按输入框2秒")
+    dev_print(device,"文案---长按输入框2秒")
     d.long_click(560, 678, 2)
     time.sleep(1)
     #点击Paste
-    print("文案---点击Paste")
+    dev_print(device,"文案---点击Paste")
     d(text="Paste").click()
     time.sleep(1)
     d.click(82,1124)
     time.sleep(2)
     #点击Done
-    print("文案---点击Done")
+    dev_print(device,"文案---点击Done")
     d(text="Done").click()
     time.sleep(1)
     #长按正中间，向上拖动500像素
-    print("文案---长按正中间，向上拖动500像素")
+    dev_print(device,"文案---长按正中间，向上拖动500像素")
     d.swipe(0.5, 0.5, 0.5, 0.5-400/1920, 0.5)
     time.sleep(1)
 
 
 #选择视频
-def SelectVideo(d,i):
-    print("视频---点击发布视频")
+def SelectVideo(d,i,device):
+    dev_print(device,"视频---点击发布视频")
     #点击发布视频
     d.click(550,2150)
     time.sleep(2)
-    print("视频---点击Upload")
+    dev_print(device,"视频---点击Upload")
     d(text="Upload").click()
     time.sleep(2)
-    print("视频---点击Videos")
+    dev_print(device,"视频---点击Videos")
     d(text="Videos").click()
     time.sleep(2)
-    print("视频---点击第"+str(i)+"个视频")
+    dev_print(device,"视频---点击第"+str(i)+"个视频")
     video_list = d(textStartsWith="00")
     video_list[i].click()
     time.sleep(2)
     #判断是否有select按钮
-    print("视频---判断是否有select按钮")
+    dev_print(device,"视频---判断是否有select按钮")
     isselect = d(text="Select")
     if isselect.exists():
         #点击Next按钮
         d.click(990,2108)
-        print("视频---点击Next按钮位置坐标")
+        dev_print(device,"视频---点击Next按钮位置坐标")
         time.sleep(2)
 
 #添加音乐
-def AddMusic(d):
+def AddMusic(d,device):
     #点击音乐
-    print("点击音乐")
+    dev_print(device,"点击音乐")
     sound = d(text="Add sound")
     if sound.exists():
         sound.click()
     elif d(text="Sounds"):
         d(text="Sounds").click()
     else:
-        print("错误!音乐---找不到添加音乐按钮")
+        dev_print(device,"错误!音乐---找不到添加音乐按钮")
         return
     
     time.sleep(2)
     #这一步是如果添加音乐拉起的是半屏，就点击访问全屏界面
-    print("音乐---点击访问全屏界面")
+    dev_print(device,"音乐---点击访问全屏界面")
     d.click(1000,1148)
     time.sleep(5)
     fav_button =  d(text="Favorites")
-    print("音乐---点击Favorites")
+    dev_print(device,"音乐---点击Favorites")
     fav_button.click()
     time.sleep(2)
     re_center = fav_button.center()
     #选择下面的一首曲子
-    print("音乐---选择下面的一首曲子")
+    dev_print(device,"音乐---选择下面的一首曲子")
     d.click(re_center[0],re_center[1]+200)
     time.sleep(1)
     #点击对勾
-    print("音乐---点击对勾")
+    dev_print(device,"音乐---点击对勾")
     d.click(900,re_center[1]+200)
     time.sleep(2)
     #去掉半窗
-    print("音乐---去掉半窗")
-    d.click(0.5,0.4)
+    dev_print(device,"音乐---去掉半窗")
+    d.click(30,300)
     time.sleep(2)
 
 #编辑音量
-def EditVolume(d):
+def EditVolume(d,device):
     #点击编辑音频音量
-    print("音量---点击编辑音频音量")
+    dev_print(device,"音量---点击编辑音频音量")
     edit = d(text="Edit")
     if edit:
         edit.click()
     elif d(text="Adjust clips"):
         d(text="Adjust clips").click()
     else:
-        print("错误!音量---找不到编辑视频按钮")
+        dev_print(device,"错误!音量---找不到编辑视频按钮")
         return
     
     time.sleep(2)
 
     #编辑音频音量
-    print("音量---编辑音频音量")
+    dev_print(device,"音量---编辑音频音量")
     d.click(600,1710)
     time.sleep(2)
     #点击volume
-    print("音量---点击volume")
+    dev_print(device,"音量---点击volume")
     d(text="Volume").click()
     time.sleep(2)
     #拖动音量按钮到200%
-    print("音量---拖动音量按钮到200%")
+    dev_print(device,"音量---拖动音量按钮到200%")
     d.swipe(0.5, 0.86, 0.05, 0.86, 0.5)
     time.sleep(2)
     #点击Save
-    print("音量---点击Save")
+    dev_print(device,"音量---点击Save")
     d(text="Save").click()
     time.sleep(2)
 
     #编辑视频音量
-    print("音量---编辑视频音量")
+    dev_print(device,"音量---编辑视频音量")
     d.click(600,1570)
     time.sleep(2)
     #点击volume
-    print("音量---点击volume")
+    dev_print(device,"音量---点击volume")
     d(text="Volume").click()
     time.sleep(2)
     #拖动音量按钮到200%
-    print("音量---拖动音量按钮到200%")
+    dev_print(device,"音量---拖动音量按钮到200%")
     d.swipe(0.5, 0.86, 0.95, 0.86, 0.5)
     time.sleep(2)
     #点击Save
-    print("音量---点击Save")
+    dev_print(device,"音量---点击Save")
     d(text="Save").click()
     time.sleep(2)
     #点击Save
-    print("音量---点击Save")
+    dev_print(device,"音量---点击Save")
     d(text="Save").click()
     time.sleep(2)
 
 #填写post文案
-def EditPostContent(d,data):
+def EditPostContent(d,data,device):
     #把内容存入剪贴板
-    print("填写post文案---把内容存入剪贴板")
+    dev_print(device,"填写post文案---把内容存入剪贴板")
     d.set_clipboard(data['post_text']+" ")
     time.sleep(2)
     #长按输入框2秒
-    print("填写post文案---长按输入框2秒")
+    dev_print(device,"填写post文案---长按输入框2秒")
     d.long_click(0.07, 0.13, 2)
     time.sleep(1)
     #点击Paste
-    print("填写post文案---点击Paste")
+    dev_print(device,"填写post文案---点击Paste")
     d(text="Paste").click()
     time.sleep(3)
     #点击空白区域落下键盘
-    print("填写post文案---点击空白区域落下键盘")
+    dev_print(device,"填写post文案---点击空白区域落下键盘")
     d.click(968,668)
     time.sleep(2)
 
 #添加产品
-def AddProduct(d,p):
+def AddProduct(d,p,device):
     #点击add link按钮
-    print("产品--添加产品:"+p)
+    dev_print(device,"产品--添加产品:"+p)
     d(text="Add link").click()
     time.sleep(2)
     #点击add product按钮
-    print("产品--点击add product按钮") 
+    dev_print(device,"产品--点击add product按钮") 
     d(text="Product").click()
     time.sleep(5)
     #把产品信息依次粘贴至剪贴板
-    print("产品--把产品信息依次粘贴至剪贴板")
+    dev_print(device,"产品--把产品信息依次粘贴至剪贴板")
     d.set_clipboard(p)
     time.sleep(1)
     #点击输入框，长按2秒后
-    print("产品--点击输入框，长按2秒后")
+    dev_print(device,"产品--点击输入框，长按2秒后")
     d.long_click(0.157, 0.127, 2)
     time.sleep(1)
     #点击Paste
-    print("产品--点击Paste")
+    dev_print(device,"产品--点击Paste")
     d(text="Paste").click()
     time.sleep(2)
     #点击右下角搜索
-    print("产品--点击右下角搜索")
+    dev_print(device,"产品--点击右下角搜索")
     d.click(0.9, 0.9)
     time.sleep(5)
     #点击第一个add按钮
-    print("产品--点击第一个add按钮")
+    dev_print(device,"产品--点击第一个add按钮")
     addlist = d(text="Add")
     addlist[0].click()
     time.sleep(2)
     #如果弹窗了点击一个add按钮
-    print("产品--如果弹窗了点击一个add按钮")
+    dev_print(device,"产品--如果弹窗了点击一个add按钮")
     d.click(0.5, 0.5)
     time.sleep(5)
     try:
         #添加产品之后返回页面
         d(text="Add").click()
     except Exception as e:
-        print("错误!产品--添加产品失败")
+        dev_print(device,"错误!产品--添加产品失败")
         return
     
     time.sleep(5)
     #这里判断，如果是没挂上车要给报警
     #判断是否还存在 Add a product的文案
     #点击左下角落下键盘
-    print("产品--点击左下角落下键盘")
+    dev_print(device,"产品--点击左下角落下键盘")
     d.click(0.152, 0.974)
     time.sleep(2)
 
 def test(device):
     d = u2.connect(device)
-    print("点击音乐")
-    sound = d(text="Add sound")
-    if sound.exists():
-        sound.click()
-    elif d(text="Sounds"):
-        d(text="Sounds").click()
-    else:
-        print("错误!音乐---找不到添加音乐按钮")
-        return
+    #先执行退出
+    dev_print(device,"退出app")
+    try:
+        d.app_stop('com.zhiliaoapp.musically')
+        d.app_stop('com.ss.android.ugc.trill') 
+    except Exception as e:
+        dev_print(device,e)
+
+    #等待10秒
+    dev_print(device,"等待10秒")
+    time.sleep(10)
+
+    #再唤醒app
+    try:
+        d.app_start('com.zhiliaoapp.musically')
+    except Exception as e:
+        print(e)
+    
+    try:
+        d.app_start('com.ss.android.ugc.trill') 
+    except Exception as e:
+        print(e)
+
+    dev_print(device,"唤醒app")
+    #等待10秒
+    dev_print(device,"等待10秒")
+    time.sleep(10)
 
 
 def multitask(devices_list,task):
     threads = []
     t = threading.Thread()
+    get_device_name()
     for device in devices_list:
         #唤醒
         if task == 'connect':
